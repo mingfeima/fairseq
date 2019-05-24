@@ -35,7 +35,8 @@ def main(rank, args):
 
     if args.max_tokens is None and args.max_sentences is None:
         args.max_tokens = 12000
-    print(args)
+    if rank == 0:
+        print(args)
 
     use_cuda = torch.cuda.is_available() and not args.cpu
 
