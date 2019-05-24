@@ -10,12 +10,14 @@ Translate pre-processed data with a trained model.
 """
 
 import torch
+import torch.multiprocessing as mp
+import math
 
 from fairseq import bleu, checkpoint_utils, options, progress_bar, tasks, utils
 from fairseq.meters import StopwatchMeter, TimeMeter
 
 
-def main(args):
+def main(rank, args):
     assert args.path is not None, '--path required for generation!'
     assert not args.sampling or args.nbest == args.beam, \
         '--sampling requires --nbest to be equal to --beam'
@@ -23,6 +25,13 @@ def main(args):
         '--replace-unk requires a raw text dataset (--raw-text)'
 
     utils.import_user_module(args)
+
+    if args.num_processes > 1:
+        total_threads = torch._C.get_num_threads()
+        threads_per_process = math.floor(torch._C.get_num_threads() / args.num_processes)
+        torch._C.set_num_threads(threads_per_process)
+        print('| Using {} processes, each process with {} threads'.format(
+            args.num_processes, threads_per_process))
 
     if args.max_tokens is None and args.max_sentences is None:
         args.max_tokens = 12000
@@ -175,8 +184,11 @@ def main(args):
             t.log({'wps': round(wps_meter.avg)})
             num_sentences += sample['nsentences']
 
-    print('| Translated {} sentences ({} tokens) in {:.1f}s ({:.2f} sentences/s, {:.2f} tokens/s)'.format(
-        num_sentences, gen_timer.n, gen_timer.sum, num_sentences / gen_timer.sum, 1. / gen_timer.avg))
+            if args.max_updates > 0 and num_sentences > args.max_updates:
+                break
+
+    print('| [{}]/[{}] Translated {} sentences ({} tokens) in {:.1f}s ({:.2f} sentences/s, {:.2f} tokens/s)'.format(
+        rank, args.num_processes, num_sentences, gen_timer.n, gen_timer.sum, num_sentences / gen_timer.sum, 1. / gen_timer.avg))
     if has_target:
         print('| Generate {} with beam={}: {}'.format(args.gen_subset, args.beam, scorer.result_string()))
     return scorer
@@ -184,8 +196,25 @@ def main(args):
 
 def cli_main():
     parser = options.get_generation_parser()
+    parser.add_argument('--num-processes', type=int, default=1, metavar='N',
+                        help='how many inference processes to use (default: 1)')
+    parser.add_argument('--max-updates', type=int, default=-1, metavar='N',
+                        help='how many sentences to compute (default: -1)')
     args = options.parse_args_and_arch(parser)
-    main(args)
+
+    if args.num_processes > 1:
+        # multi instance run
+        processes = []
+        for rank in range(args.num_processes):
+            p = mp.Process(target=main, args=(rank, args))
+            p.start()
+            processes.append(p)
+
+        for p in processes:
+            p.join()
+    else:
+        # single instance run
+        main(rank=0, args=args)
 
 
 if __name__ == '__main__':
