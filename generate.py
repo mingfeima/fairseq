@@ -59,6 +59,9 @@ def main(rank, args):
         task=task,
     )
 
+    if rank == 0:
+        print(models)
+
     # Optimize ensemble for generation
     for model in models:
         model.make_generation_fast_(
@@ -194,6 +197,11 @@ def main(rank, args):
         print('| Generate {} with beam={}: {}'.format(args.gen_subset, args.beam, scorer.result_string()))
     return scorer
 
+def main_p(rank, args):
+    print('enable autograd profiler!')
+    with torch.autograd.profiler.profile() as prof:
+        main(rank, args)
+    prof.export_chrome_trace('prof_rank_{}.json'.format(rank))
 
 def cli_main():
     parser = options.get_generation_parser()
@@ -201,13 +209,18 @@ def cli_main():
                         help='how many inference processes to use (default: 1)')
     parser.add_argument('--max-updates', type=int, default=-1, metavar='N',
                         help='how many sentences to compute (default: -1)')
+    parser.add_argument('--profiling', action='store_true',
+                        help='enable profiling')
     args = options.parse_args_and_arch(parser)
 
     if args.num_processes > 1:
         # multi instance run
         processes = []
         for rank in range(args.num_processes):
-            p = mp.Process(target=main, args=(rank, args))
+            if args.profiling:
+                p = mp.Process(target=main_p, args=(rank, args))
+            else:
+                p = mp.Process(target=main, args=(rank, args))
             p.start()
             processes.append(p)
 

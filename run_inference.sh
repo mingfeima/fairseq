@@ -17,8 +17,15 @@ NUM_PROCESSES=$TOTAL_CORES
 BATCH_SIZE=1
 SENTENCES=100
 
+
+# uncomment this to enable profiling
+ARGS=""
+#ARGS="$ARGS --profiling"
+
+
 OMP_NUM_THREADS=$TOTAL_CORES fairseq-generate \
     data-bin/wmt14.en-fr.joined-dict.newstest2014 \
     --path data-bin/wmt14.en-fr.joined-dict.transformer/model.pt \
     --beam 5 --batch-size $BATCH_SIZE --remove-bpe --quiet \
-    --num-processes=$NUM_PROCESSES --max-updates=$SENTENCES
+    --num-processes=$NUM_PROCESSES --max-updates=$SENTENCES \
+    $ARGS
