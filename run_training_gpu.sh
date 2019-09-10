@@ -1,6 +1,12 @@
 ###
 ### script for training iwslt14 german to english dataset
-### https://github.com/pytorch/fairseq/tree/master/examples/translation#iwslt14-german-to-english-transformer
+### reference:
+###   https://github.com/pytorch/fairseq/tree/master/examples/translation#iwslt14-german-to-english-transformer
+###
+### 1. prepare dataset:
+###   https://github.com/pytorch/fairseq/tree/master/examples/translation#iwslt14-german-to-english-transformer
+### 2. install
+###   pip install --editable .
 ###
 
 
