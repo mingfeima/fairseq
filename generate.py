@@ -183,7 +183,13 @@ def main(args):
 def cli_main():
     parser = options.get_generation_parser()
     args = options.parse_args_and_arch(parser)
-    main(args)
+    if args.profile:
+        print("### starting autograd profiler ###")
+        with torch.autograd.profiler.profile() as prof:
+            main(args)
+        prof.export_chrome_trace("result.json")
+    else:
+        main(args)
 
 
 if __name__ == '__main__':
