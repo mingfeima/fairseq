@@ -37,10 +37,10 @@ if [[ "$1" == "--single" ]]; then
   shift
 fi
 
-export OMP_NUM_THREADS=$TOTAL_CORES
+export OMP_NUM_THREADS=$CORES
 export $KMP_SETTING
 
-echo -e "### using OMP_NUM_THREADS=$TOTAL_CORES"
+echo -e "### using OMP_NUM_THREADS=$CORES"
 echo -e "### using $KMP_SETTING"
 sleep 3
 
@@ -55,9 +55,20 @@ else
   gdown  https://drive.google.com/uc?id=13-bTrj9nD5mhSuP_EpftZcJM3jShXU1C -O $MODEL
 fi
 
-LOG=inference_cpu_bs${BATCH_SIZE}.txt
-$PREFIX fairseq-generate data-bin/iwslt14.tokenized.de-en \
+LOG0=inference_cpu_bs${BATCH_SIZE}_NODE0.txt
+numactl --cpunodebind=0 --membind=0 fairseq-generate data-bin/iwslt14.tokenized.de-en \
     --path $MODEL \
     --batch-size $BATCH_SIZE --beam 5 --remove-bpe \
     --cpu \
-    2>&1 | tee $LOG
+    2>&1 | tee $LOG0 &
+
+LOG1=inference_cpu_bs${BATCH_SIZE}_NODE1.txt
+numactl --cpunodebind=1 --membind=1 fairseq-generate data-bin/iwslt14.tokenized.de-en \
+    --path $MODEL \
+    --batch-size $BATCH_SIZE --beam 5 --remove-bpe \
+    --cpu \
+    2>&1 | tee $LOG1
+
+echo -e "\n\n Sum sentences/s together:"
+tail -n 2 $LOG0
+tail -n 2 $LOG1
