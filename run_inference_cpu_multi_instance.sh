@@ -18,6 +18,20 @@
 ###   a. low perf due to model modification
 ###   b. add mkldnn support (use MkldnnLinear)
 
+### Please config jemalloc before running this script, this is crucial for CPU performance
+###   1. jemalloc: https://github.com/jemalloc/jemalloc/wiki/Getting-Started
+###      a) download from release: https://github.com/jemalloc/jemalloc/releases
+###      b) tar -jxvf jemalloc-5.2.0.tar.bz2
+###      c) ./configure
+###         make
+###      d) cd /home/mingfeim/packages/jemalloc-5.2.0/bin
+###         chmod 777 jemalloc-config
+###
+
+
+export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:9000000000,muzzy_decay_ms:9000000000";
+export LD_PRELOAD=/home/mingfeim/packages/jemalloc-5.2.0/lib/libjemalloc.so
+
 
 CORES=`lscpu | grep Core | awk '{print $4}'`
 SOCKETS=`lscpu | grep Socket | awk '{print $2}'`
