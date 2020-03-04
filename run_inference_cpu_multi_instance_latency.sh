@@ -37,7 +37,7 @@ SOCKETS=`lscpu | grep Socket | awk '{print $2}'`
 TOTAL_CORES=`expr $CORES \* $SOCKETS`
 
 # change this number to adjust number of instances
-CORES_PER_INSTANCE=$CORES
+CORES_PER_INSTANCE=4
 
 
 KMP_SETTING="KMP_AFFINITY=granularity=fine,compact,1,0"
