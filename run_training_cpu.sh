@@ -44,6 +44,6 @@ OMP_NUM_THREADS=$CORES $PREFIX fairseq-train data-bin/wmt17_en_de/ \
     --criterion label_smoothed_cross_entropy \
     --label-smoothing 0.1 \
     --max-tokens 4096 \
-    --num-workers 0 \
+    #--num-workers 0 \
     --cpu
 
